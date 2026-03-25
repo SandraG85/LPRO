@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Proyecto LPRO</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            text-align: center;
+        }
+
+        .container {
+            padding: 80px 20px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 1.3em;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            display: inline-block;
+            margin-top: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        img {
+            width: 300px;
+            margin-top: 20px;
+            border-radius: 12px;
+        }
+
+        footer {
+            margin-top: 80px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>El mejor proyecto de LPRO</h1>
+    <div class="card">
+        <p>Servidor desplegado correctamente en Render 🚀</p>
+        <img src="{{ url_for('static', filename='images/tu_imagen.jpg') }}">
+    </div>
+</div>
+
+<footer>
+    Proyecto LPRO - 2026
+</footer>
+
+</body>
+</html>
