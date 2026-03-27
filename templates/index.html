@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Proyecto LPRO</title>
-    <!-- Leaflet CSS -->
     //unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <style>
         body {
@@ -12,15 +11,28 @@
             color: white;
             text-align: center;
         }
-        .container { padding: 40px 20px; }
-        h1 { font-size: 3em; margin-bottom: 20px; }
+
+        .container {
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
         #map {
             width: 80%;
             height: 500px;
             margin: 30px auto;
             border-radius: 15px;
         }
-        footer { margin-top: 40px; font-size: 0.9em; opacity: 0.8; }
+
+        footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -32,35 +44,40 @@
 
 <footer>Proyecto LPRO - 2026</footer>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // Inicializa el mapa centrado en España
     const map = L.map('map').setView([40.0, -3.5], 5);
 
-    // Capa base (OpenStreetMap, gratuito)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
+        attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
-    // Consulta los eventos y pinta los puntos
+    let markers = [];
+
     function cargarEventos() {
         fetch('/api/events')
             .then(res => res.json())
             .then(events => {
+                // Borra markers anteriores para evitar duplicados
+                markers.forEach(m => map.removeLayer(m));
+                markers = [];
+
                 events.forEach(ev => {
                     if (ev.lat !== undefined && ev.lon !== undefined) {
-                        L.marker([ev.lat, ev.lon])
+                        const marker = L.marker([ev.lat, ev.lon])
                             .addTo(map)
-                            .bindPopup(`<b>${ev.nombre || 'Evento'}</b><br>Lat: ${ev.lat}<br>Lon: ${ev.lon}`);
+                            .bindPopup(
+                                '<b>' + (ev.nombre || 'Evento') + '</b><br>' +
+                                'Lat: ' + ev.lat + '<br>' +
+                                'Lon: ' + ev.lon
+                            );
+                        markers.push(marker);
                     }
                 });
             });
     }
 
     cargarEventos();
-
-    // Refresca el mapa cada 5 segundos
     setInterval(cargarEventos, 5000);
 </script>
 
