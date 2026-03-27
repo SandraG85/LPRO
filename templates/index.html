@@ -16,6 +16,16 @@
             color: white;
             text-align: center;
         }
+        .logo-container {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+        }
+        
+        .logo-container img {
+            height: 60px; /* ajusta el tamaño del logo*/
+        }
 
         .container {
             padding: 40px 20px;
@@ -42,8 +52,12 @@
 </head>
 <body>
 
+<div class="logo-container">
+    <img src="logo_waveBlaster.png" alt="WaveBlaster logo">
+</div>
+    
 <div class="container">
-    <h1>El mejor proyecto de LPRO</h1>
+    <h1>WaveBlaster</h1>
     <div id="map"></div>
 </div>
 
