@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Proyecto LPRO</title>
+    <!-- Leaflet CSS -->
+    //unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <style>
         body {
             margin: 0;
@@ -10,55 +12,57 @@
             color: white;
             text-align: center;
         }
-
-        .container {
-            padding: 80px 20px;
-        }
-
-        h1 {
-            font-size: 3em;
-            margin-bottom: 20px;
-        }
-
-        p {
-            font-size: 1.3em;
-        }
-
-        .card {
-            background: rgba(255,255,255,0.1);
-            padding: 30px;
+        .container { padding: 40px 20px; }
+        h1 { font-size: 3em; margin-bottom: 20px; }
+        #map {
+            width: 80%;
+            height: 500px;
+            margin: 30px auto;
             border-radius: 15px;
-            display: inline-block;
-            margin-top: 30px;
-            backdrop-filter: blur(10px);
         }
-
-        img {
-            width: 300px;
-            margin-top: 20px;
-            border-radius: 12px;
-        }
-
-        footer {
-            margin-top: 80px;
-            font-size: 0.9em;
-            opacity: 0.8;
-        }
+        footer { margin-top: 40px; font-size: 0.9em; opacity: 0.8; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>El mejor proyecto de LPRO</h1>
-    <div class="card">
-        <p>Servidor desplegado correctamente </p>
-        <img src="{{ url_for('static', filename='imagen_meme.webp') }}">
-    </div>
+    <div id="map"></div>
 </div>
 
-<footer>
-    Proyecto LPRO - 2026
-</footer>
+<footer>Proyecto LPRO - 2026</footer>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Inicializa el mapa centrado en España
+    const map = L.map('map').setView([40.0, -3.5], 5);
+
+    // Capa base (OpenStreetMap, gratuito)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Consulta los eventos y pinta los puntos
+    function cargarEventos() {
+        fetch('/api/events')
+            .then(res => res.json())
+            .then(events => {
+                events.forEach(ev => {
+                    if (ev.lat !== undefined && ev.lon !== undefined) {
+                        L.marker([ev.lat, ev.lon])
+                            .addTo(map)
+                            .bindPopup(`<b>${ev.nombre || 'Evento'}</b><br>Lat: ${ev.lat}<br>Lon: ${ev.lon}`);
+                    }
+                });
+            });
+    }
+
+    cargarEventos();
+
+    // Refresca el mapa cada 5 segundos
+    setInterval(cargarEventos, 5000);
+</script>
 
 </body>
 </html>
