@@ -1,41 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Proyecto LPRO</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WaveBlaster</title>
 
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
-    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background-color: #071733; 
+            background-color: #020817;
             color: white;
             text-align: center;
         }
+
         .logo-container {
             position: fixed;
-            top: 30px;
-            left: 30px;
+            top: 20px;
+            left: 20px;
             z-index: 1000;
         }
-        
+
         .logo-container img {
-            height: 250px; /* ajusta el tamaño del logo*/
-            
+            height: 140px;
+        }
+
+        .topbar {
+            position: fixed;
+            top: 20px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            gap: 12px;
+            background: rgba(255,255,255,0.08);
+            padding: 10px 16px;
+            border-radius: 999px;
+            backdrop-filter: blur(8px);
+        }
+
+        .topbar a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 10px 16px;
+            border-radius: 999px;
+            transition: 0.3s;
+        }
+
+        .topbar a:hover {
+            background-color: rgba(132, 255, 180, 0.18);
+            color: #b7ffcb;
         }
 
         .container {
-            padding: 40px 20px;
-            margin-top: 220px;   /* desplaza título + mapa hacia abajo */
+            padding: 220px 20px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        section {
+            margin-bottom: 80px;
+            scroll-margin-top: 180px;
         }
 
         h1 {
-            font-size: 5em;
-            margin-bottom: 30px;
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            margin-bottom: 20px;
+        }
+
+        p {
+            max-width: 800px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
         }
 
         #map {
@@ -45,8 +92,28 @@
             border-radius: 15px;
         }
 
+        .tabla-estadisticas {
+            width: 80%;
+            margin: 30px auto;
+            border-collapse: collapse;
+            background: rgba(255,255,255,0.06);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .tabla-estadisticas th,
+        .tabla-estadisticas td {
+            padding: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .tabla-estadisticas th {
+            background: rgba(255,255,255,0.12);
+        }
+
         footer {
             margin-top: 40px;
+            padding-bottom: 30px;
             font-size: 0.9em;
             opacity: 0.8;
         }
@@ -54,54 +121,114 @@
 </head>
 <body>
 
-<div class="logo-container">
-    <img src="static/logo_waveBlaster.png" alt="WaveBlaster logo">
-</div>
-    
-<div class="container">
-    <h1>WaveBlaster</h1>
-    <div id="map"></div>
-</div>
+    <div class="logo-container">
+        <img src="waveblaster_logo.png" alt="Logo de WaveBlaster">
+    </div>
 
-<footer>Proyecto LPRO - 2026</footer>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    const map = L.map('map').setView([40.0, -3.5], 5);
+    <nav class="topbar">
+        <a href="#inicio">Inicio</a>
+        <a href="#mapa">Mapa</a>
+        <a href="#estadisticas">Estadísticas</a>
+        <a href="#quienes-somos">Quiénes somos</a>
+    </nav>
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
+    <div class="container">
 
-    let markers = [];
+        <section id="inicio">
+            <h1>WaveBlaster</h1>
+            <p>
+                Sistema de detección en tiempo real de explosiones submarinas
+                asociadas a la pesca ilegal mediante análisis acústico.
+            </p>
+        </section>
 
-    function cargarEventos() {
-        fetch('/api/events')
-            .then(res => res.json())
-            .then(events => {
-                // Borra markers anteriores para evitar duplicados
-                markers.forEach(m => map.removeLayer(m));
-                markers = [];
+        <section id="mapa">
+            <h2>Mapa en tiempo real</h2>
+            <div id="map"></div>
+        </section>
 
-                events.forEach(ev => {
-                    if (ev.lat !== undefined && ev.lon !== undefined) {
-                        const marker = L.marker([ev.lat, ev.lon])
-                            .addTo(map)
-                            .bindPopup(
-                                '<b>' + (ev.nombre || 'Evento') + '</b><br>' +
-                                'Lat: ' + ev.lat + '<br>' +
-                                'Lon: ' + ev.lon
-                            );
-                        markers.push(marker);
-                    }
+        <section id="estadisticas">
+            <h2>Estadísticas</h2>
+            <table class="tabla-estadisticas">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Zona</th>
+                        <th>Número de eventos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>05/04/2026</td>
+                        <td>Atlántico Norte</td>
+                        <td>12</td>
+                    </tr>
+                    <tr>
+                        <td>04/04/2026</td>
+                        <td>Costa de Galicia</td>
+                        <td>7</td>
+                    </tr>
+                    <tr>
+                        <td>03/04/2026</td>
+                        <td>Golfo de Cádiz</td>
+                        <td>4</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="quienes-somos">
+            <h2>Quiénes somos</h2>
+            <p>
+                WaveBlaster es un proyecto orientado a la monitorización acústica
+                submarina y a la detección de explosiones vinculadas a actividades
+                de pesca ilegal.
+            </p>
+            <p>
+                La plataforma integra geolocalización, análisis de eventos y
+                visualización en tiempo real para facilitar la vigilancia marítima.
+            </p>
+        </section>
+
+    </div>
+
+    <footer>Proyecto LPRO - 2026</footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([40.0, -3.5], 5);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        let markers = [];
+
+        function cargarEventos() {
+            fetch('/api/events')
+                .then(res => res.json())
+                .then(events => {
+                    markers.forEach(m => map.removeLayer(m));
+                    markers = [];
+
+                    events.forEach(ev => {
+                        if (ev.lat !== undefined && ev.lon !== undefined) {
+                            const marker = L.marker([ev.lat, ev.lon])
+                                .addTo(map)
+                                .bindPopup(
+                                    '<b>' + (ev.nombre || 'Evento') + '</b><br>' +
+                                    'Lat: ' + ev.lat + '<br>' +
+                                    'Lon: ' + ev.lon
+                                );
+                            markers.push(marker);
+                        }
+                    });
                 });
-            });
-    }
+        }
 
-    cargarEventos();
-    setInterval(cargarEventos, 5000);
-
-    
-</script>
+        cargarEventos();
+        setInterval(cargarEventos, 5000);
+    </script>
 
 </body>
 </html>
