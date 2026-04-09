@@ -175,61 +175,61 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <script>
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const target = button.getAttribute('data-tab');
-
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
-
-                button.classList.add('active');
-                document.getElementById(target).classList.add('active');
-
-                if (target === 'mapa') {
-                    setTimeout(() => {
-                        map.invalidateSize();
-                    }, 100);
-                }
-            });
-        });
-
-        const map = L.map('map').setView([40.0, -3.5], 5);
-
+        const map = L.map('map').setView([40.0, -6.0], 6);
+        
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap'
         }).addTo(map);
-
+        
         let markers = [];
-
+        
         function cargarEventos() {
-            fetch('/api/events')
+            fetch('https://lpro-v1d4.onrender.com/api/events')
                 .then(res => res.json())
                 .then(events => {
+                    // Borra marcadores anteriores
                     markers.forEach(m => map.removeLayer(m));
                     markers = [];
-
+        
                     events.forEach(ev => {
-                        if (ev.lat !== undefined && ev.lon !== undefined) {
-                            const marker = L.marker([ev.lat, ev.lon])
+                        if (ev.latitude !== undefined && ev.longitude !== undefined) {
+        
+                            // Icono rojo para las explosiones
+                            const icono = L.divIcon({
+                                className: '',
+                                html: `<div style="
+                                    width: 14px;
+                                    height: 14px;
+                                    background: #ff4444;
+                                    border: 2px solid white;
+                                    border-radius: 50%;
+                                    box-shadow: 0 0 8px #ff4444;
+                                "></div>`,
+                                iconSize: [14, 14],
+                                iconAnchor: [7, 7]
+                            });
+        
+                            const marker = L.marker([ev.latitude, ev.longitude], { icon: icono })
                                 .addTo(map)
-                                .bindPopup(
-                                    '<b>' + (ev.nombre || 'Evento') + '</b><br>' +
-                                    'Lat: ' + ev.lat + '<br>' +
-                                    'Lon: ' + ev.lon
-                                );
+                                .bindPopup(`
+                                    <b>💥 ${ev.event || 'Explosión detectada'}</b><br>
+                                    <b>Nodo:</b> ${ev.node_id || '-'}<br>
+                                    <b>Confianza:</b> ${ev.confidence !== undefined ? (ev.confidence * 100).toFixed(0) + '%' : '-'}<br>
+                                    <b>Lat:</b> ${ev.latitude}<br>
+                                    <b>Lon:</b> ${ev.longitude}<br>
+                                    <b>Hora UTC:</b> ${ev.timestamp_utc || '-'}
+                                `);
+        
                             markers.push(marker);
                         }
                     });
-                });
+                })
+                .catch(err => console.error('Error al cargar eventos:', err));
         }
-
+        
         cargarEventos();
-        setInterval(cargarEventos, 5000);
+        setInterval(cargarEventos, 5000); // refresca cada 5 segundos
     </script>
 
 </body>
