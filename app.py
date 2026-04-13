@@ -1,66 +1,117 @@
 from flask import Flask, render_template, request, jsonify
 from twilio.rest import Client
 import os
-import sqlite3
-from datetime import datetime
+import json
+import base64
+import requests
 
 app = Flask(__name__)
 
-DB_PATH = "events.db"
-
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            node_id TEXT,
-            event TEXT,
-            timestamp_utc TEXT,
-            latitude REAL,
-            longitude REAL,
-            confidence REAL,
-            created_at TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-def get_all_events():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM events ORDER BY id DESC")
-    rows = cur.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-def save_event(data):
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO events (
-            node_id, event, timestamp_utc, latitude, longitude, confidence, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-        data.get("node_id"),
-        data.get("event"),
-        data.get("timestamp_utc"),
-        data.get("latitude"),
-        data.get("longitude"),
-        data.get("confidence"),
-        datetime.utcnow().isoformat() + "Z"
-    ))
-    conn.commit()
-    conn.close()
-
-init_db()
-
+# =========================
+# Variables de entorno
+# =========================
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
 TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER")
 ALERT_TO_NUMBER = os.environ.get("ALERT_TO_NUMBER")
 
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+GITHUB_OWNER = os.environ.get("GITHUB_OWNER")
+GITHUB_REPO = os.environ.get("GITHUB_REPO")
+GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main")
+GITHUB_FILE_PATH = "events.json"
+
+# =========================
+# Utilidades GitHub
+# =========================
+def github_headers():
+    return {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json"
+    }
+
+def github_file_url():
+    return f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}"
+
+def get_github_events():
+    if not all([GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO]):
+        print("[GITHUB] Faltan variables de entorno.")
+        return []
+
+    r = requests.get(
+        github_file_url(),
+        headers=github_headers(),
+        params={"ref": GITHUB_BRANCH},
+        timeout=20
+    )
+
+    if r.status_code == 404:
+        print("[GITHUB] events.json no existe todavía.")
+        return []
+
+    r.raise_for_status()
+    data = r.json()
+
+    content_b64 = data.get("content", "")
+    if not content_b64:
+        return []
+
+    decoded = base64.b64decode(content_b64).decode("utf-8")
+    try:
+        return json.loads(decoded)
+    except json.JSONDecodeError:
+        print("[GITHUB] Error decodificando events.json")
+        return []
+
+def get_github_file_sha():
+    r = requests.get(
+        github_file_url(),
+        headers=github_headers(),
+        params={"ref": GITHUB_BRANCH},
+        timeout=20
+    )
+
+    if r.status_code == 404:
+        return None
+
+    r.raise_for_status()
+    return r.json().get("sha")
+
+def save_events_to_github(events):
+    content_str = json.dumps(events, ensure_ascii=False, indent=2)
+    content_b64 = base64.b64encode(content_str.encode("utf-8")).decode("utf-8")
+    sha = get_github_file_sha()
+
+    payload = {
+        "message": "Actualizar events.json desde WaveBlaster",
+        "content": content_b64,
+        "branch": GITHUB_BRANCH
+    }
+
+    if sha:
+        payload["sha"] = sha
+
+    r = requests.put(
+        github_file_url(),
+        headers=github_headers(),
+        json=payload,
+        timeout=30
+    )
+
+    r.raise_for_status()
+    return r.json()
+
+def append_event_to_github(event_data):
+    events = get_github_events()
+    events.append(event_data)
+    save_events_to_github(events)
+
+def delete_all_events_github():
+    save_events_to_github([])
+
+# =========================
+# Lógica SMS
+# =========================
 def should_send_sms(event_data):
     try:
         return (
@@ -96,10 +147,21 @@ def send_sms_alert(event_data):
     print(f"[SMS] Enviado correctamente. SID: {message.sid}")
     return True
 
+# =========================
+# Rutas Flask
+# =========================
 @app.route("/")
 def inicio():
-    events = get_all_events()
+    events = get_github_events()
     return render_template("index.html", events=events)
+
+@app.route("/api/events", methods=["GET"])
+def listar_eventos():
+    try:
+        events = get_github_events()
+        return jsonify(events), 200
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route("/api/events", methods=["POST"])
 def recibir_evento():
@@ -108,7 +170,10 @@ def recibir_evento():
     if not data:
         return jsonify({"ok": False, "error": "JSON no valido"}), 400
 
-    save_event(data)
+    try:
+        append_event_to_github(data)
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Error guardando en GitHub: {str(e)}"}), 500
 
     sms_sent = False
     if should_send_sms(data):
@@ -123,9 +188,16 @@ def recibir_evento():
         "sms_sent": sms_sent
     }), 201
 
-@app.route("/api/events", methods=["GET"])
-def listar_eventos():
-    return jsonify(get_all_events()), 200
+@app.route("/api/events", methods=["DELETE"])
+def borrar_eventos():
+    try:
+        delete_all_events_github()
+        return jsonify({
+            "ok": True,
+            "message": "Todos los eventos han sido borrados"
+        }), 200
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Error borrando eventos: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
