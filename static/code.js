@@ -18,7 +18,7 @@ let markers = [];
 let buoyChart = null;
 
 function cargarEventos() {
-    fetch('https://lpro-kk59.onrender.com/api/events')
+    fetch('https://lpro-kwtd.onrender.com/api/events')
         .then(res => res.json())
         .then(events => {
             actualizarMapa(events);
