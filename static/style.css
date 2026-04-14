@@ -37,6 +37,9 @@ body {
 h1 {
     font-size: 4em;
     margin: 0;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-shadow: 0 3px 14px rgba(0,0,0,0.25);
 }
 
 h2 {
@@ -92,7 +95,7 @@ h2 {
 }
 
 #map {
-    width: 100%;
+    width: 82%;
     height: 500px;
     margin: 20px auto;
     border-radius: 15px;
