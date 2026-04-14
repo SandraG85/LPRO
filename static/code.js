@@ -16,6 +16,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let markers = [];
 let buoyChart = null;
+let confianzaChart = null;
 
 function cargarEventos() {
     fetch('https://lpro-kwtd.onrender.com/api/events')
@@ -82,6 +83,7 @@ function actualizarMapa(events) {
 // ── ESTADÍSTICAS ──────────────────────────────────────
 function actualizarEstadisticas(events) {
     actualizarGraficaBoyas(events);
+    actualizarGraficaConfianza(events);
     actualizarTablaBoyas(events);
 }
 
@@ -218,7 +220,89 @@ function actualizarTablaBoyas(events) {
         tbody.appendChild(tr);
     });
 }
+function actualizarGraficaConfianza(events) {
+    const canvas = document.getElementById('confianzaChart');
+    if (!canvas) return;
 
+    const resumen = resumirPorBoya(events);
+
+    const labels = Object.keys(resumen);
+    const data = labels.map(id =>
+        resumen[id].total > 0
+            ? Number(((resumen[id].sumaConfianza / resumen[id].total) * 100).toFixed(1))
+            : 0
+    );
+
+    const chartData = {
+        labels: labels,
+        datasets: [{
+            label: 'Confianza media (%)',
+            data: data,
+            backgroundColor: [
+                '#ff4d4d',
+                '#4da6ff',
+                '#ffd24d',
+                '#66e066',
+                '#cc66ff'
+            ],
+            borderColor: '#ffffff',
+            borderWidth: 1
+        }]
+    };
+
+    if (confianzaChart) {
+        confianzaChart.data = chartData;
+        confianzaChart.update();
+    } else {
+        confianzaChart = new Chart(canvas, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'white'
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Confianza media por boya',
+                        color: 'white'
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: 'white'
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.08)'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            color: 'white',
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.08)'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Confianza media (%)',
+                            color: 'white'
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
 cargarEventos();
 setInterval(cargarEventos, 5000);
 
@@ -240,8 +324,16 @@ tabButtons.forEach(button => {
             setTimeout(() => map.invalidateSize(), 100);
         }
 
-        if (target === 'estadisticas' && buoyChart) {
-            setTimeout(() => buoyChart.update(), 100);
+        if (target === 'mapa') {
+            setTimeout(() => map.invalidateSize(), 100);
+        }
+        
+        if (target === 'num-explosiones' && buoyChart) {
+            setTimeout(() => buoyChart.resize(), 100);
+        }
+        
+        if (target === 'confianza-boya' && confianzaChart) {
+            setTimeout(() => confianzaChart.resize(), 100);
         }
     });
 });
