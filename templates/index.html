@@ -6,6 +6,7 @@
     <title>WaveBlaster</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -30,31 +31,26 @@
             </div>
 
             <div id="estadisticas" class="tab-content">
-                <h2>Tablas estadísticas</h2>
-                <table class="tabla-estadisticas">
+                <h2>Estadísticas</h2>
+            
+                <div style="max-width: 800px; margin: 0 auto;">
+                    anvas id="confidenceChart"></canvas>
+                </div>
+            
+                <h3 style="margin-top: 30px;">Listado de eventos</h3>
+                <table class="tabla-estadisticas" id="tabla-eventos">
                     <thead>
                         <tr>
                             <th>Fecha</th>
-                            <th>Zona</th>
-                            <th>Eventos detectados</th>
+                            <th>Hora (UTC)</th>
+                            <th>Nodo</th>
+                            <th>Lat</th>
+                            <th>Lon</th>
+                            <th>Confianza</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>05/04/2026</td>
-                            <td>Costa Atlántica</td>
-                            <td>12</td>
-                        </tr>
-                        <tr>
-                            <td>04/04/2026</td>
-                            <td>Galicia</td>
-                            <td>7</td>
-                        </tr>
-                        <tr>
-                            <td>03/04/2026</td>
-                            <td>Mar de Alborán</td>
-                            <td>4</td>
-                        </tr>
+                        <!-- Se rellena por JS -->
                     </tbody>
                 </table>
             </div>
