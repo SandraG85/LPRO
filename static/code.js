@@ -2,6 +2,13 @@
 
 // ── MAPA ──────────────────────────────────────────────
 const map = L.map('map').setView([40.0, -6.0], 6);
+const BOYAS = {
+    boya_1: { color: "#ff4d4d" },  // rojo
+    boya_2: { color: "#4da6ff" },  // azul
+    boya_3: { color: "#ffd24d" },  // amarillo
+    boya_4: { color: "#66e066" },  // verde
+    boya_5: { color: "#cc66ff" }   // morado
+};
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap'
@@ -26,20 +33,23 @@ function actualizarMapa(events) {
 
     events.forEach(ev => {
         if (ev.latitude !== undefined && ev.longitude !== undefined) {
+    
+            const boya = BOYAS[ev.node_id] || { color: "#ff4444" };
+    
             const icono = L.divIcon({
                 className: '',
                 html: `<div style="
                     width: 14px;
                     height: 14px;
-                    background: #ff4444;
+                    background: ${boya.color};
                     border: 2px solid white;
                     border-radius: 50%;
-                    box-shadow: 0 0 8px #ff4444;
+                    box-shadow: 0 0 8px ${boya.color};
                 "></div>`,
                 iconSize: [14, 14],
                 iconAnchor: [7, 7]
             });
-
+    
             const marker = L.marker([ev.latitude, ev.longitude], { icon: icono })
                 .addTo(map)
                 .bindPopup(`
@@ -50,7 +60,7 @@ function actualizarMapa(events) {
                     <b>Lon:</b> ${ev.longitude}<br>
                     <b>Hora UTC:</b> ${ev.timestamp_utc || '-'}
                 `);
-
+    
             markers.push(marker);
         }
     });
