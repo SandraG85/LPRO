@@ -32,26 +32,22 @@
 
             <div id="estadisticas" class="tab-content">
                 <h2>Estadísticas</h2>
-
+            
                 <div style="max-width: 800px; margin: 0 auto;">
-                    <canvas id="confidenceChart"></canvas>
+                    <canvas id="buoyChart"></canvas>
                 </div>
-
-                <h3 style="margin-top: 30px;">Listado de eventos</h3>
-                <table class="tabla-estadisticas" id="tabla-eventos">
+            
+                <h3 style="margin-top: 30px;">Resumen por boya</h3>
+                <table class="tabla-estadisticas" id="tabla-boyas">
                     <thead>
                         <tr>
-                            <th>Fecha</th>
-                            <th>Hora (UTC)</th>
-                            <th>Nodo</th>
-                            <th>Lat</th>
-                            <th>Lon</th>
-                            <th>Confianza</th>
+                            <th>Boya</th>
+                            <th>Explosiones registradas</th>
+                            <th>Confianza media</th>
+                            <th>Última detección</th>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Se rellena por JS -->
-                    </tbody>
+                    </thead> <!--se rellena con el js-->
+                    <tbody></tbody>
                 </table>
             </div>
 
