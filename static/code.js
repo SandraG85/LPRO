@@ -1,3 +1,5 @@
+
+
 // ── MAPA ──────────────────────────────────────────────
 const map = L.map('map').setView([40.0, -6.0], 6);
 
@@ -6,7 +8,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 let markers = [];
-let confidenceChart = null;
+let buoyChart = null;
 
 function cargarEventos() {
     fetch('https://lpro-kk59.onrender.com/api/events')
@@ -24,7 +26,6 @@ function actualizarMapa(events) {
 
     events.forEach(ev => {
         if (ev.latitude !== undefined && ev.longitude !== undefined) {
-
             const icono = L.divIcon({
                 className: '',
                 html: `<div style="
@@ -55,52 +56,70 @@ function actualizarMapa(events) {
     });
 }
 
-// ── ESTADÍSTICAS (estas son para la pestña de 'estadisticas')──────────────────────────────────────
+// ── ESTADÍSTICAS ──────────────────────────────────────
 function actualizarEstadisticas(events) {
-    actualizarGraficaConfianza(events);
-    actualizarTablaEventos(events);
+    actualizarGraficaBoyas(events);
+    actualizarTablaBoyas(events);
 }
 
-function actualizarGraficaConfianza(events) {
-    const canvas = document.getElementById('confidenceChart');
-    if (!canvas) return;
+function resumirPorBoya(events) {
+    const resumen = {
+        boya_1: { total: 0, sumaConfianza: 0, ultima: null },
+        boya_2: { total: 0, sumaConfianza: 0, ultima: null },
+        boya_3: { total: 0, sumaConfianza: 0, ultima: null },
+        boya_4: { total: 0, sumaConfianza: 0, ultima: null },
+        boya_5: { total: 0, sumaConfianza: 0, ultima: null }
+    };
 
-    const ultimos = [...events].slice(-20);
+    events.forEach(ev => {
+        const id = ev.node_id;
+        if (!resumen[id]) return;
 
-    const labels = ultimos.map((ev, i) => {
+        resumen[id].total += 1;
+        resumen[id].sumaConfianza += Number(ev.confidence || 0);
+
         if (ev.timestamp_utc) {
-            const d = new Date(ev.timestamp_utc);
-            return d.toISOString().slice(11, 16); // HH:MM
+            if (!resumen[id].ultima || new Date(ev.timestamp_utc) > new Date(resumen[id].ultima)) {
+                resumen[id].ultima = ev.timestamp_utc;
+            }
         }
-        return `Evento ${i + 1}`;
     });
 
-    const data = ultimos.map(ev =>
-        ev.confidence !== undefined ? Math.round(ev.confidence * 100) : 0
-    );
+    return resumen;
+}
+
+function actualizarGraficaBoyas(events) {
+    const canvas = document.getElementById('buoyChart');
+    if (!canvas) return;
+
+    const resumen = resumirPorBoya(events);
+
+    const labels = Object.keys(resumen);
+    const data = labels.map(id => resumen[id].total);
 
     const chartData = {
         labels: labels,
         datasets: [{
-            label: 'Confianza (%)',
+            label: 'Número de explosiones',
             data: data,
-            borderColor: '#7CFFB2',
-            backgroundColor: 'rgba(124, 255, 178, 0.2)',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.25,
-            pointBackgroundColor: '#ffffff',
-            pointBorderColor: '#7CFFB2',
-            pointRadius: 4
+            backgroundColor: [
+                '#ff4d4d',
+                '#4da6ff',
+                '#ffd24d',
+                '#66e066',
+                '#cc66ff'
+            ],
+            borderColor: '#ffffff',
+            borderWidth: 1
         }]
     };
 
-    if (confidenceChart) {
-        confidenceChart.data = chartData;
-        confidenceChart.update();
+    if (buoyChart) {
+        buoyChart.data = chartData;
+        buoyChart.update();
     } else {
-        confidenceChart = new Chart(canvas, {
-            type: 'line',
+        buoyChart = new Chart(canvas, {
+            type: 'bar',
             data: chartData,
             options: {
                 responsive: true,
@@ -112,7 +131,7 @@ function actualizarGraficaConfianza(events) {
                     },
                     title: {
                         display: true,
-                        text: 'Confianza de detección en los últimos eventos',
+                        text: 'Explosiones registradas por boya',
                         color: 'white'
                     }
                 },
@@ -127,16 +146,16 @@ function actualizarGraficaConfianza(events) {
                     },
                     y: {
                         beginAtZero: true,
-                        max: 100,
                         ticks: {
-                            color: 'white'
+                            color: 'white',
+                            precision: 0
                         },
                         grid: {
                             color: 'rgba(255,255,255,0.08)'
                         },
                         title: {
                             display: true,
-                            text: 'Confianza (%)',
+                            text: 'Número de explosiones',
                             color: 'white'
                         }
                     }
@@ -146,38 +165,33 @@ function actualizarGraficaConfianza(events) {
     }
 }
 
-function actualizarTablaEventos(events) {
-    const tbody = document.querySelector('#tabla-eventos tbody');
+function actualizarTablaBoyas(events) {
+    const tbody = document.querySelector('#tabla-boyas tbody');
     if (!tbody) return;
 
+    const resumen = resumirPorBoya(events);
     tbody.innerHTML = '';
 
-    const ordenados = [...events].sort((a, b) => {
-        if (!a.timestamp_utc || !b.timestamp_utc) return 0;
-        return new Date(b.timestamp_utc) - new Date(a.timestamp_utc);
-    });
+    Object.keys(resumen).forEach(id => {
+        const item = resumen[id];
 
-    ordenados.forEach(ev => {
-        const tr = document.createElement('tr');
+        const confianzaMedia = item.total > 0
+            ? ((item.sumaConfianza / item.total) * 100).toFixed(1) + '%'
+            : '-';
 
-        let fecha = '-';
-        let hora = '-';
-
-        if (ev.timestamp_utc) {
-            const d = new Date(ev.timestamp_utc);
-            fecha = d.toISOString().slice(0, 10);
-            hora = d.toISOString().slice(11, 19);
+        let ultima = '-';
+        if (item.ultima) {
+            const d = new Date(item.ultima);
+            ultima = d.toISOString().slice(0, 19).replace('T', ' ');
         }
 
+        const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${fecha}</td>
-            <td>${hora}</td>
-            <td>${ev.node_id || '-'}</td>
-            <td>${ev.latitude !== undefined ? Number(ev.latitude).toFixed(4) : '-'}</td>
-            <td>${ev.longitude !== undefined ? Number(ev.longitude).toFixed(4) : '-'}</td>
-            <td>${ev.confidence !== undefined ? (ev.confidence * 100).toFixed(0) + '%' : '-'}</td>
+            <td>${id}</td>
+            <td>${item.total}</td>
+            <td>${confianzaMedia}</td>
+            <td>${ultima}</td>
         `;
-
         tbody.appendChild(tr);
     });
 }
@@ -203,8 +217,8 @@ tabButtons.forEach(button => {
             setTimeout(() => map.invalidateSize(), 100);
         }
 
-        if (target === 'estadisticas' && confidenceChart) {
-            setTimeout(() => confidenceChart.update(), 100);
+        if (target === 'estadisticas' && buoyChart) {
+            setTimeout(() => buoyChart.update(), 100);
         }
     });
 });
