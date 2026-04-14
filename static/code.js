@@ -3,11 +3,11 @@
 // ── MAPA ──────────────────────────────────────────────
 const map = L.map('map').setView([40.0, -6.0], 6);
 const BOYAS = {
-    boya_1: { color: "#ff4d4d" },  // rojo
-    boya_2: { color: "#4da6ff" },  // azul
-    boya_3: { color: "#ffd24d" },  // amarillo
-    boya_4: { color: "#66e066" },  // verde
-    boya_5: { color: "#cc66ff" }   // morado
+    boya_1: { lat: 42.235940, lon: -8.849534, color: "#ff4d4d" },  // rojo
+    boya_2: { lat: 42.190278, lon: -8.856384, color: "#4da6ff" },  // azul
+    boya_3: { lat: 42.216111, lon: -8.797224, color: "#ffd24d" },  // amarillo
+    boya_4: { lat: 42.249771, lon: -8.772315, color: "#66e066" },  // verde
+    boya_5: { lat: 42.263137, lon: -8.721873, color: "#cc66ff" }   // morado
 };
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
