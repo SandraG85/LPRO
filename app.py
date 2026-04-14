@@ -128,6 +128,7 @@ def build_sms_text(event_data):
         f"Nodo: {event_data.get('node_id')}\n"
         f"Hora: {event_data.get('Hora de la explosion')}\n"
         f"Lat: {event_data.get('Latitud')} Lon: {event_data.get('Longitud')}\n"
+        f"RSSI (dBm): {event_data.get('RSSI (dBm)')}\n"
         f"Confianza: {event_data.get('Confianza')}"
     )
 
