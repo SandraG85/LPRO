@@ -63,12 +63,13 @@ h2 {
 }
 
 .tab-button:hover {
-    background-color: #3f3f3f;
+    background-color: #3a3a3a;
     transform: translateY(-2px);
 }
 
 .tab-button.active {
     background-color: #4f83cc;
+    box-shadow: 0 6px 16px rgba(79,131,204,0.35);
 }
 
 .tab-content-container {
