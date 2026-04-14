@@ -64,6 +64,7 @@ h2 {
 
 .tab-button:hover {
     background-color: #3f3f3f;
+    transform: translateY(-2px);
 }
 
 .tab-button.active {
