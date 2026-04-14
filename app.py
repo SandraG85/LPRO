@@ -126,9 +126,9 @@ def build_sms_text(event_data):
         "ALERTA LPRO\n"
         f"Evento: {event_data.get('event')}\n"
         f"Nodo: {event_data.get('node_id')}\n"
-        f"Hora: {event_data.get('timestamp_utc')}\n"
-        f"Lat: {event_data.get('latitude')} Lon: {event_data.get('longitude')}\n"
-        f"Confianza: {event_data.get('confidence')}"
+        f"Hora: {event_data.get('Hora de la explosion')}\n"
+        f"Lat: {event_data.get('Latitud')} Lon: {event_data.get('Longitud')}\n"
+        f"Confianza: {event_data.get('Confianza')}"
     )
 
 def send_sms_alert(event_data):
