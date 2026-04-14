@@ -14,76 +14,80 @@
         <img src="{{ url_for('static', filename='logo_waveBlaster.png') }}" alt="Logo WaveBlaster">
     </div>
 
-    <div class="main-content">
+    <div class="header">
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='logo_waveBlaster.png') }}" alt="Logo WaveBlaster">
+        </div>
         <h1>WaveBlaster</h1>
-
-        <div class="tabs">
-            <button class="tab-button active" data-tab="mapa">Mapa</button>
-            <button class="tab-button" data-tab="num-explosiones">Número de explosiones</button>
-            <button class="tab-button" data-tab="confianza-boya">Confianza por boya</button>
-            <button class="tab-button" data-tab="historial">Historial de explosiones</button>
-            <button class="tab-button" data-tab="quienes-somos">Quiénes somos</button>
-        </div>
-
-        <div class="tab-content-container">
-
-            <div id="mapa" class="tab-content active">
-                <h2>Mapa en tiempo real</h2>
-                <div id="map"></div>
-            </div>
-
-            <div id="num-explosiones" class="tab-content">
-                <h2>Número de explosiones</h2>
-                <div style="max-width: 800px; margin: 0 auto;">
-                    <canvas id="buoyChart"></canvas>
-                </div>
-            </div>
-            
-            <div id="confianza-boya" class="tab-content">
-                <h2>Confianza media por boya</h2>
-                <div style="max-width: 800px; margin: 0 auto;">
-                    <canvas id="confianzaChart"></canvas>
-                </div>
-            </div>
-            
-            <div id="historial" class="tab-content">
-                <h2>Resumen por boya</h2>
-                <table class="tabla-estadisticas" id="tabla-boyas">
-                    <thead>
-                        <tr>
-                            <th>Boya</th>
-                            <th>Explosiones registradas</th>
-                            <th>Confianza media</th>
-                            <th>Última detección</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-
-            <div id="quienes-somos" class="tab-content">
-                <h2>Quiénes somos</h2>
-                <p>
-                    Somos cinco estudiantes de la Universidad de Vigo y hemos desarrollado WaveBlaster
-                    como parte del trabajo realizado en la asignatura LPRO.
-                </p>
-                <p>
-                    WaveBlaster es un sistema autónomo de detección y monitorización de explosiones
-                    submarinas potencialmente vinculadas a la pesca ilegal, a partir del análisis acústico de eventos.
-                </p>
-                <p>
-                    El sistema integra la monitorización en tiempo real mediante una red de boyas fijas,
-                    la detección a través de hidrófonos, el procesamiento de la señal acústica y la
-                    visualización geográfica de los eventos en el mapa.
-                </p>
-            </div>
-            
-
-        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="{{ url_for('static', filename='code.js') }}"></script>
+    <div class="tabs">
+        <button class="tab-button active" data-tab="mapa">Mapa</button>
+        <button class="tab-button" data-tab="num-explosiones">Número de explosiones</button>
+        <button class="tab-button" data-tab="confianza-boya">Confianza por boya</button>
+        <button class="tab-button" data-tab="historial">Historial de explosiones</button>
+        <button class="tab-button" data-tab="quienes-somos">Quiénes somos</button>
+    </div>
+
+    <div class="tab-content-container">
+
+        <div id="mapa" class="tab-content active">
+            <h2>Mapa en tiempo real</h2>
+            <div id="map"></div>
+        </div>
+
+        <div id="num-explosiones" class="tab-content">
+            <h2>Número de explosiones</h2>
+            <div style="max-width: 800px; margin: 0 auto;">
+                <canvas id="buoyChart"></canvas>
+            </div>
+        </div>
+        
+        <div id="confianza-boya" class="tab-content">
+            <h2>Confianza media por boya</h2>
+            <div style="max-width: 800px; margin: 0 auto;">
+                <canvas id="confianzaChart"></canvas>
+            </div>
+        </div>
+        
+        <div id="historial" class="tab-content">
+            <h2>Resumen por boya</h2>
+            <table class="tabla-estadisticas" id="tabla-boyas">
+                <thead>
+                    <tr>
+                        <th>Boya</th>
+                        <th>Explosiones registradas</th>
+                        <th>Confianza media</th>
+                        <th>Última detección</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="quienes-somos" class="tab-content">
+            <h2>Quiénes somos</h2>
+            <p>
+                Somos cinco estudiantes de la Universidad de Vigo y hemos desarrollado WaveBlaster
+                como parte del trabajo realizado en la asignatura LPRO.
+            </p>
+            <p>
+                WaveBlaster es un sistema autónomo de detección y monitorización de explosiones
+                submarinas potencialmente vinculadas a la pesca ilegal, a partir del análisis acústico de eventos.
+            </p>
+            <p>
+                El sistema integra la monitorización en tiempo real mediante una red de boyas fijas,
+                la detección a través de hidrófonos, el procesamiento de la señal acústica y la
+                visualización geográfica de los eventos en el mapa.
+            </p>
+        </div>
+        
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='code.js') }}"></script>
 
 </body>
 </html>
