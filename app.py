@@ -116,7 +116,7 @@ def should_send_sms(event_data):
     try:
         return (
             event_data.get("event") == "explosion_detected"
-            and float(event_data.get("confidence", 0)) >= 0.90
+            #and float(event_data.get("confidence", 0)) >= 0.90
         )
     except Exception:
         return False
