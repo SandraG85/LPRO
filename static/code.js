@@ -28,41 +28,54 @@ function cargarEventos() {
 }
 
 function actualizarMapa(events) {
+    // Limpiar marcadores anteriores
     markers.forEach(m => map.removeLayer(m));
     markers = [];
 
+    // Agrupar por node_id
+    const resumen = {
+        boya_1: { total: 0 },
+        boya_2: { total: 0 },
+        boya_3: { total: 0 },
+        boya_4: { total: 0 },
+        boya_5: { total: 0 }
+    };
+
     events.forEach(ev => {
-        if (ev.latitude !== undefined && ev.longitude !== undefined) {
-    
-            const boya = BOYAS[ev.node_id] || { color: "#ff4444" };
-    
-            const icono = L.divIcon({
-                className: '',
-                html: `<div style="
-                    width: 14px;
-                    height: 14px;
-                    background: ${boya.color};
-                    border: 2px solid white;
-                    border-radius: 50%;
-                    box-shadow: 0 0 8px ${boya.color};
-                "></div>`,
-                iconSize: [14, 14],
-                iconAnchor: [7, 7]
-            });
-    
-            const marker = L.marker([ev.latitude, ev.longitude], { icon: icono })
-                .addTo(map)
-                .bindPopup(`
-                    <b>💥 ${ev.event || 'Explosión detectada'}</b><br>
-                    <b>Nodo:</b> ${ev.node_id || '-'}<br>
-                    <b>Confianza:</b> ${ev.confidence !== undefined ? (ev.confidence * 100).toFixed(0) + '%' : '-'}<br>
-                    <b>Lat:</b> ${ev.latitude}<br>
-                    <b>Lon:</b> ${ev.longitude}<br>
-                    <b>Hora UTC:</b> ${ev.timestamp_utc || '-'}
-                `);
-    
-            markers.push(marker);
+        if (ev.node_id && resumen[ev.node_id]) {
+            resumen[ev.node_id].total += 1;
         }
+    });
+
+    // Crear un marcador por boya
+    Object.keys(BOYAS).forEach(nodeId => {
+        const infoBoya = BOYAS[nodeId];
+        const total = resumen[nodeId] ? resumen[nodeId].total : 0;
+
+        const icono = L.divIcon({
+            className: '',
+            html: `<div style="
+                width: 18px;
+                height: 18px;
+                background: ${infoBoya.color};
+                border: 3px solid white;
+                border-radius: 50%;
+                box-shadow: 0 0 10px ${infoBoya.color};
+            "></div>`,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+        });
+
+        const marker = L.marker([infoBoya.lat, infoBoya.lon], { icon: icono })
+            .addTo(map)
+            .bindPopup(`
+                <b>${nodeId}</b><br>
+                Lat: ${infoBoya.lat.toFixed(5)}<br>
+                Lon: ${infoBoya.lon.toFixed(5)}<br>
+                Explosiones registradas: <b>${total}</b>
+            `);
+
+        markers.push(marker);
     });
 }
 
