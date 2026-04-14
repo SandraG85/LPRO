@@ -265,11 +265,6 @@ function actualizarGraficaConfianza(events) {
                             color: 'white'
                         }
                     },
-                    title: {
-                        display: true,
-                        text: 'Confianza media por boya',
-                        color: 'white'
-                    }
                 },
                 scales: {
                     x: {
