@@ -48,6 +48,14 @@ function esLongitudValida(lon) {
     return Number.isFinite(lon) && lon >= -180 && lon <= 180;
 }
 
+function esLatitudValida(lat) {
+    return Number.isFinite(lat) && lat >= -90 && lat <= 90;
+}
+
+function esLongitudValida(lon) {
+    return Number.isFinite(lon) && lon >= -180 && lon <= 180;
+}
+
 function normalizarEvento(ev) {
     const nodeId = normalizarNodeId(ev.node_id);
     const latRecibida = Number(ev.latitude ?? ev["Latitud"]);
