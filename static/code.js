@@ -40,18 +40,37 @@ function normalizarNodeId(valor) {
     return limpio;
 }
 
+function esLatitudValida(lat) {
+    return Number.isFinite(lat) && lat >= -90 && lat <= 90;
+}
+
+function esLongitudValida(lon) {
+    return Number.isFinite(lon) && lon >= -180 && lon <= 180;
+}
+
 function normalizarEvento(ev) {
+    const nodeId = normalizarNodeId(ev.node_id);
+    const latRecibida = Number(ev.latitude ?? ev["Latitud"]);
+    const lonRecibida = Number(ev.longitude ?? ev["Longitud"]);
+
+    let latFinal = latRecibida;
+    let lonFinal = lonRecibida;
+
+    if ((!esLatitudValida(latRecibida) || !esLongitudValida(lonRecibida)) && nodeId && BOYAS[nodeId]) {
+        latFinal = BOYAS[nodeId].lat;
+        lonFinal = BOYAS[nodeId].lon;
+    }
+
     return {
         event_id: ev.event_id || null,
-        node_id: normalizarNodeId(ev.node_id),
+        node_id: nodeId,
         event: ev.event || null,
         timestamp_utc: normalizarTimestamp(ev.timestamp_utc || ev["Hora de la explosion"]),
-        latitude: Number(ev.latitude ?? ev["Latitud"] ?? 0),
-        longitude: Number(ev.longitude ?? ev["Longitud"] ?? 0),
+        latitude: latFinal,
+        longitude: lonFinal,
         confidence: Number(ev.confidence ?? ev["Confianza"] ?? 0),
         rssi_dbm: ev.rssi_dbm ?? ev["RSSI (dBm)"] ?? null
     };
-    // Soporta ambos esquemas de claves y limpia el prefijo "RECIBIDO:" del node_id.[web:573][web:607]
 }
 
 function cargarEventos() {
