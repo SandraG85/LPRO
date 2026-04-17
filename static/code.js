@@ -1,11 +1,11 @@
 // ── MAPA ──────────────────────────────────────────────
 const map = L.map('map').setView([40.0, -6.0], 6);
 const BOYAS = {
-    boya_1: { lat: 42.235940, lon: -8.849534, color: "#ff4d4d" },  // rojo
-    boya_2: { lat: 42.190278, lon: -8.856384, color: "#4da6ff" },  // azul
-    boya_3: { lat: 42.216111, lon: -8.797224, color: "#ffd24d" },  // amarillo
-    boya_4: { lat: 42.249771, lon: -8.772315, color: "#66e066" },  // verde
-    boya_5: { lat: 42.263137, lon: -8.721873, color: "#cc66ff" }   // morado
+    boya_1: { lat: 42.235940, lon: -8.849534, color: "#ff4d4d" },
+    boya_2: { lat: 42.190278, lon: -8.856384, color: "#4da6ff" },
+    boya_3: { lat: 42.216111, lon: -8.797224, color: "#ffd24d" },
+    boya_4: { lat: 42.249771, lon: -8.772315, color: "#66e066" },
+    boya_5: { lat: 42.263137, lon: -8.721873, color: "#cc66ff" }
 };
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -15,13 +15,50 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let markers = [];
 let buoyChart = null;
 let confianzaChart = null;
-let eventosGlobales = [];  // guardamos todos los eventos para el historial detallado
+let eventosGlobales = [];
+
+// ── NORMALIZACIÓN ─────────────────────────────────────
+function normalizarTimestamp(valor) {
+    if (!valor) return null;
+
+    if (typeof valor === 'string' && valor.includes(' - ')) {
+        return valor.replace(' - ', 'T') + 'Z';
+    }
+
+    return valor;
+}
+
+function normalizarNodeId(valor) {
+    if (!valor) return null;
+
+    let limpio = String(valor).trim();
+
+    if (limpio.startsWith('RECIBIDO:')) {
+        limpio = limpio.replace('RECIBIDO:', '').trim();
+    }
+
+    return limpio;
+}
+
+function normalizarEvento(ev) {
+    return {
+        event_id: ev.event_id || null,
+        node_id: normalizarNodeId(ev.node_id),
+        event: ev.event || null,
+        timestamp_utc: normalizarTimestamp(ev.timestamp_utc || ev["Hora de la explosion"]),
+        latitude: Number(ev.latitude ?? ev["Latitud"] ?? 0),
+        longitude: Number(ev.longitude ?? ev["Longitud"] ?? 0),
+        confidence: Number(ev.confidence ?? ev["Confianza"] ?? 0),
+        rssi_dbm: ev.rssi_dbm ?? ev["RSSI (dBm)"] ?? null
+    };
+    // Soporta ambos esquemas de claves y limpia el prefijo "RECIBIDO:" del node_id.[web:573][web:607]
+}
 
 function cargarEventos() {
     fetch('https://lpro-kwtd.onrender.com/api/events')
         .then(res => res.json())
         .then(events => {
-            eventosGlobales = events || [];
+            eventosGlobales = (events || []).map(normalizarEvento);
             actualizarMapa(eventosGlobales);
             actualizarEstadisticas(eventosGlobales);
         })
@@ -29,11 +66,9 @@ function cargarEventos() {
 }
 
 function actualizarMapa(events) {
-    // Limpiar marcadores anteriores
     markers.forEach(m => map.removeLayer(m));
     markers = [];
 
-    // Agrupar por node_id
     const resumen = {
         boya_1: { total: 0 },
         boya_2: { total: 0 },
@@ -48,7 +83,6 @@ function actualizarMapa(events) {
         }
     });
 
-    // Crear un marcador por boya
     Object.keys(BOYAS).forEach(nodeId => {
         const infoBoya = BOYAS[nodeId];
         const total = resumen[nodeId] ? resumen[nodeId].total : 0;
@@ -81,8 +115,6 @@ function actualizarMapa(events) {
 }
 
 // ── ESTADÍSTICAS ──────────────────────────────────────
-
-// devuelve solo los eventos de los últimos 7 días
 function filtrarUltimaSemana(events) {
     const ahora = new Date();
     const hace7Dias = new Date();
@@ -91,14 +123,15 @@ function filtrarUltimaSemana(events) {
     return events.filter(ev => {
         if (!ev.timestamp_utc) return false;
         const fecha = new Date(ev.timestamp_utc);
-        return fecha >= hace7Dias && fecha <= ahora;
+        return !isNaN(fecha) && fecha >= hace7Dias && fecha <= ahora;
     });
+    // Filtra por últimos 7 días usando Date en JavaScript.[web:609]
 }
 
 function actualizarEstadisticas(events) {
-    actualizarGraficaBoyas(events);        // con filtro de 7 días dentro
-    actualizarGraficaConfianza(events);    // seguimos usando todos los eventos
-    actualizarTablaBoyas(events);          // resumen con todos los eventos
+    actualizarGraficaBoyas(events);
+    actualizarGraficaConfianza(events);
+    actualizarTablaBoyas(events);
 }
 
 function resumirPorBoya(events) {
@@ -118,8 +151,11 @@ function resumirPorBoya(events) {
         resumen[id].sumaConfianza += Number(ev.confidence || 0);
 
         if (ev.timestamp_utc) {
-            if (!resumen[id].ultima || new Date(ev.timestamp_utc) > new Date(resumen[id].ultima)) {
-                resumen[id].ultima = ev.timestamp_utc;
+            const fecha = new Date(ev.timestamp_utc);
+            if (!isNaN(fecha)) {
+                if (!resumen[id].ultima || fecha > new Date(resumen[id].ultima)) {
+                    resumen[id].ultima = ev.timestamp_utc;
+                }
             }
         }
     });
@@ -131,7 +167,6 @@ function actualizarGraficaBoyas(events) {
     const canvas = document.getElementById('buoyChart');
     if (!canvas) return;
 
-    // solo eventos de la última semana
     const eventosSemana = filtrarUltimaSemana(events);
     const resumen = resumirPorBoya(eventosSemana);
 
@@ -223,23 +258,21 @@ function actualizarTablaBoyas(events) {
         let ultima = '-';
         if (item.ultima) {
             const d = new Date(item.ultima);
-            ultima = d.toISOString().slice(0, 19).replace('T', ' ');
+            if (!isNaN(d)) {
+                ultima = d.toISOString().slice(0, 19).replace('T', ' ');
+            }
         }
 
         const tr = document.createElement('tr');
-
-        // dejamos la boya clicable para ver su historial
         tr.innerHTML = `
             <td><button class="link-boya" data-boya="${id}">${id}</button></td>
             <td>${item.total}</td>
             <td>${confianzaMedia}</td>
             <td>${ultima}</td>
         `;
-
         tbody.appendChild(tr);
     });
 
-    // añadir listeners de click para mostrar historial detallado
     tbody.querySelectorAll('.link-boya').forEach(btn => {
         btn.addEventListener('click', () => {
             const boyaId = btn.getAttribute('data-boya');
@@ -266,12 +299,18 @@ function mostrarHistorialBoya(boyaId) {
 
     let filas = '';
     eventosBoya.forEach(ev => {
-        const fecha = ev.timestamp_utc
-            ? new Date(ev.timestamp_utc).toISOString().slice(0, 19).replace('T', ' ')
-            : '-';
+        let fecha = '-';
+        if (ev.timestamp_utc) {
+            const d = new Date(ev.timestamp_utc);
+            if (!isNaN(d)) {
+                fecha = d.toISOString().slice(0, 19).replace('T', ' ');
+            }
+        }
+
         const confianza = ev.confidence != null
             ? (Number(ev.confidence) * 100).toFixed(1) + '%'
             : '-';
+
         const lat = ev.latitude != null ? Number(ev.latitude).toFixed(5) : '-';
         const lon = ev.longitude != null ? Number(ev.longitude).toFixed(5) : '-';
 
@@ -349,7 +388,7 @@ function actualizarGraficaConfianza(events) {
                         labels: {
                             color: 'white'
                         }
-                    },
+                    }
                 },
                 scales: {
                     x: {
@@ -414,3 +453,5 @@ tabButtons.forEach(button => {
         }
     });
 });
+
+
