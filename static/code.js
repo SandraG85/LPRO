@@ -1,5 +1,3 @@
-
-
 // ── MAPA ──────────────────────────────────────────────
 const map = L.map('map').setView([40.0, -6.0], 6);
 const BOYAS = {
@@ -17,13 +15,15 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let markers = [];
 let buoyChart = null;
 let confianzaChart = null;
+let eventosGlobales = [];  // guardamos todos los eventos para el historial detallado
 
 function cargarEventos() {
     fetch('https://lpro-kwtd.onrender.com/api/events')
         .then(res => res.json())
         .then(events => {
-            actualizarMapa(events);
-            actualizarEstadisticas(events);
+            eventosGlobales = events || [];
+            actualizarMapa(eventosGlobales);
+            actualizarEstadisticas(eventosGlobales);
         })
         .catch(err => console.error('Error al cargar eventos:', err));
 }
@@ -81,10 +81,24 @@ function actualizarMapa(events) {
 }
 
 // ── ESTADÍSTICAS ──────────────────────────────────────
+
+// devuelve solo los eventos de los últimos 7 días
+function filtrarUltimaSemana(events) {
+    const ahora = new Date();
+    const hace7Dias = new Date();
+    hace7Dias.setDate(ahora.getDate() - 7);
+
+    return events.filter(ev => {
+        if (!ev.timestamp_utc) return false;
+        const fecha = new Date(ev.timestamp_utc);
+        return fecha >= hace7Dias && fecha <= ahora;
+    });
+}
+
 function actualizarEstadisticas(events) {
-    actualizarGraficaBoyas(events);
-    actualizarGraficaConfianza(events);
-    actualizarTablaBoyas(events);
+    actualizarGraficaBoyas(events);        // con filtro de 7 días dentro
+    actualizarGraficaConfianza(events);    // seguimos usando todos los eventos
+    actualizarTablaBoyas(events);          // resumen con todos los eventos
 }
 
 function resumirPorBoya(events) {
@@ -117,7 +131,9 @@ function actualizarGraficaBoyas(events) {
     const canvas = document.getElementById('buoyChart');
     if (!canvas) return;
 
-    const resumen = resumirPorBoya(events);
+    // solo eventos de la última semana
+    const eventosSemana = filtrarUltimaSemana(events);
+    const resumen = resumirPorBoya(eventosSemana);
 
     const labels = Object.keys(resumen);
     const data = labels.map(id => resumen[id].total);
@@ -125,7 +141,7 @@ function actualizarGraficaBoyas(events) {
     const chartData = {
         labels: labels,
         datasets: [{
-            label: 'Número de explosiones',
+            label: 'Número de explosiones (últimos 7 días)',
             data: data,
             backgroundColor: [
                 '#ff4d4d',
@@ -156,7 +172,7 @@ function actualizarGraficaBoyas(events) {
                     },
                     title: {
                         display: true,
-                        text: 'Explosiones registradas por boya',
+                        text: 'Explosiones registradas por boya (últimos 7 días)',
                         color: 'white'
                     }
                 },
@@ -211,15 +227,84 @@ function actualizarTablaBoyas(events) {
         }
 
         const tr = document.createElement('tr');
+
+        // dejamos la boya clicable para ver su historial
         tr.innerHTML = `
-            <td>${id}</td>
+            <td><button class="link-boya" data-boya="${id}">${id}</button></td>
             <td>${item.total}</td>
             <td>${confianzaMedia}</td>
             <td>${ultima}</td>
         `;
+
         tbody.appendChild(tr);
     });
+
+    // añadir listeners de click para mostrar historial detallado
+    tbody.querySelectorAll('.link-boya').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const boyaId = btn.getAttribute('data-boya');
+            mostrarHistorialBoya(boyaId);
+        });
+    });
 }
+
+function mostrarHistorialBoya(boyaId) {
+    const contenedor = document.getElementById('detalle-boya');
+    if (!contenedor) return;
+
+    const eventosBoya = eventosGlobales
+        .filter(ev => ev.node_id === boyaId)
+        .sort((a, b) => new Date(b.timestamp_utc) - new Date(a.timestamp_utc));
+
+    if (eventosBoya.length === 0) {
+        contenedor.innerHTML = `
+            <h3>Historial de ${boyaId}</h3>
+            <p>No hay eventos registrados para esta boya.</p>
+        `;
+        return;
+    }
+
+    let filas = '';
+    eventosBoya.forEach(ev => {
+        const fecha = ev.timestamp_utc
+            ? new Date(ev.timestamp_utc).toISOString().slice(0, 19).replace('T', ' ')
+            : '-';
+        const confianza = ev.confidence != null
+            ? (Number(ev.confidence) * 100).toFixed(1) + '%'
+            : '-';
+        const lat = ev.latitude != null ? Number(ev.latitude).toFixed(5) : '-';
+        const lon = ev.longitude != null ? Number(ev.longitude).toFixed(5) : '-';
+
+        filas += `
+            <tr>
+                <td>${fecha}</td>
+                <td>${ev.event || '-'}</td>
+                <td>${confianza}</td>
+                <td>${lat}</td>
+                <td>${lon}</td>
+            </tr>
+        `;
+    });
+
+    contenedor.innerHTML = `
+        <h3>Historial de ${boyaId}</h3>
+        <table class="tabla-estadisticas tabla-historial">
+            <thead>
+                <tr>
+                    <th>Fecha / hora (UTC)</th>
+                    <th>Evento</th>
+                    <th>Confianza</th>
+                    <th>Latitud</th>
+                    <th>Longitud</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filas}
+            </tbody>
+        </table>
+    `;
+}
+
 function actualizarGraficaConfianza(events) {
     const canvas = document.getElementById('confianzaChart');
     if (!canvas) return;
@@ -298,6 +383,7 @@ function actualizarGraficaConfianza(events) {
         });
     }
 }
+
 cargarEventos();
 setInterval(cargarEventos, 5000);
 
@@ -319,22 +405,12 @@ tabButtons.forEach(button => {
             setTimeout(() => map.invalidateSize(), 100);
         }
 
-        if (target === 'mapa') {
-            setTimeout(() => map.invalidateSize(), 100);
-        }
-        
         if (target === 'num-explosiones' && buoyChart) {
             setTimeout(() => buoyChart.resize(), 100);
         }
-        
+
         if (target === 'confianza-boya' && confianzaChart) {
             setTimeout(() => confianzaChart.resize(), 100);
         }
     });
 });
-
-
-
-
-
-
